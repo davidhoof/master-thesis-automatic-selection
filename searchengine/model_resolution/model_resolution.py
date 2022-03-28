@@ -19,7 +19,7 @@ class ModelResolution:
             return
         if isinstance(onnx_model, str) and os.path.exists(onnx_model):
             onnx_model = onnx.load(onnx_model)
-        if not isinstance(onnx_model, str) and os.path.exists(onnx_model):
+        if isinstance(onnx_model, str) and os.path.exists(onnx_model):
             raise FileNotFoundError
 
         self.model = onnx_model
