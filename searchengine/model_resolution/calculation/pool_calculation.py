@@ -1,4 +1,4 @@
-from .convolution_calculation import ConvolutionCalculation
+from model_resolution.calculation.convolution_calculation import ConvolutionCalculation
 
 
 class PoolCalculation(ConvolutionCalculation):
