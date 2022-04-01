@@ -57,6 +57,7 @@ class ConvolutionCalculation:
 
         padding_width_top, padding_width_bottom, padding_height_top, padding_height_bottom = self.__extract_pads(
             attributes)
+
         strides_width, strides_height = self.__extract_strides(attributes)
         kernel_width, kernel_height = self.__extract_kernel(attributes)
 
@@ -70,6 +71,8 @@ class ConvolutionCalculation:
         :param attributes: attributes to check
         :return: (padding_width_top, padding_width_bottom, padding_height_top, padding_height_bottom)
         """
+
+
         if "pads" not in attributes[0]:
             return 0, 0, 0, 0
         return attributes[1][attributes[0].index("pads")][0], attributes[1][attributes[0].index("pads")][1], \

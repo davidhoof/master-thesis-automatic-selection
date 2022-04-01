@@ -119,7 +119,7 @@ class ModelResolution:
         """
         input_size = [0, 0]
         output_size = self.output_size
-        for node in reversed(self.filter_nodes(self.longest_path)):
+        for node in self.filter_nodes(self.longest_path):
             input_size = [self.get_calculator(node).calculate_input_width(output_size[0], node),
                           self.get_calculator(node).calculate_input_height(output_size[1], node)]
 
