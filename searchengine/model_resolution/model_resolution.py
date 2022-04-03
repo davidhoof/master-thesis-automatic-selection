@@ -2,6 +2,7 @@ import os
 from collections import defaultdict
 
 import networkx as nx
+import numpy as np
 import onnx
 
 from model_resolution.calculation.convolution_calculation import ConvolutionCalculation
@@ -11,22 +12,23 @@ from model_resolution.calculation.pool_calculation import PoolCalculation
 class ModelResolution:
 
     def __init__(self,
-                 onnx_model="",
+                 model="",
                  calculators=[
                      ConvolutionCalculation(),
                      PoolCalculation()
                  ],
-                 output_size=[2, 2]
+                 max_input_size=[4096, 4096],
+                 use_longest_path=True
                  ) -> None:
 
-        if onnx_model is "":
+        if model is "":
             return
-        if isinstance(onnx_model, str) and os.path.exists(onnx_model):
-            onnx_model = onnx.load(onnx_model)
-        if isinstance(onnx_model, str) and os.path.exists(onnx_model):
+        if isinstance(model, str) and os.path.exists(model):
+            model = onnx.load(model)
+        if isinstance(model, str) and os.path.exists(model):
             raise FileNotFoundError
 
-        self.model = onnx_model
+        self.model = model
         onnx.checker.check_model(self.model)
 
         # build up inverted indices
@@ -43,11 +45,15 @@ class ModelResolution:
 
         self.calculators = calculators
         self.filter = [calculator.filter for calculator in self.calculators]
-        self.output_size = output_size
+        self.max_input_size = max_input_size
 
-        self.longest_path = self.calculate_longest_path()
+        if use_longest_path:
+            self.longest_path = self.__calculate_longest_path()
+            self.minimal_resolution = self.calculate_minimal_resolution_with_longest_path()
+        else:
+            self.minimal_resolution = self.calculate_minimal_resolution_basic()
 
-    def get_calculator(self, node):
+    def __get_calculator(self, node: onnx.NodeProto):
         """
         Returns calculator for node if a suitable calculator is found
         :param node: node to check
@@ -58,7 +64,7 @@ class ModelResolution:
                 return calculator
         return None
 
-    def apply_filters(self, node) -> bool:
+    def __apply_filters(self, node: onnx.NodeProto) -> bool:
         """
         Apply filters on node
         :param node: node to apply filters to
@@ -72,9 +78,9 @@ class ModelResolution:
         :param node_list: list on which the filters are applied to
         :return: list
         """
-        return list(filter(self.apply_filters, node_list))
+        return list(filter(self.__apply_filters, node_list))
 
-    def get_node_input_ids(self, node: onnx.NodeProto):
+    def __get_node_input_ids(self, node: onnx.NodeProto):
         """
         Generator for the input nodes ids based on given node
         :param node:
@@ -83,32 +89,39 @@ class ModelResolution:
             for connected_node_id in self.nodes_by_tensor_output[input_tensor]:
                 yield connected_node_id
 
-    def calculate_longest_path(self):
+    def __calculate_longest_path(self) -> list:
         """
         Calculates the longest path on the graph
         :return: list
         """
-        return [self.node_by_id[node_id] for node_id in nx.dag_longest_path(self.build_graph())]
+        return [self.node_by_id[node_id] for node_id in nx.dag_longest_path(self.__build_graph())]
 
-    def build_graph(self):
+    def __build_graph(self) -> nx.DiGraph:
         """
-        Builds a networkx Directed Acyclic Graph with input scale weights. This scale is calculated with given calculators
-        to weight the impact on the edge. If no calculator is found the output size attribute is used as weight
+        Builds a networkx Directed Acyclic Graph with output scale weights. This scale is calculated with given calculators
+        to weight the impact on the edge. If no calculator is found, (0) is used as weight
         :return: DiGraph
         """
         G = nx.DiGraph()
 
-        for node in reversed(self.model.graph.node):
-            for connected_node in self.get_node_input_ids(node):
-                if self.get_calculator(node) is not None:
+        for node in self.model.graph.node:
+            for connected_node in self.__get_node_input_ids(node):
+                if self.__get_calculator(node) is not None:
                     G.add_edge(
                         id(node),
                         connected_node,
-                        weight=(self.get_calculator(node).calculate_input_width(self.output_size[0], node) *
-                                self.get_calculator(node).calculate_input_height(self.output_size[1], node))
+                        # calculating the weight as proportion scale: max_input_size/calculated output size
+                        weight=(
+                                (self.max_input_size[0] /
+                                 self.__get_calculator(node).calculate_output_width(self.max_input_size[0], node))
+                                *
+                                (self.max_input_size[1] /
+                                 self.__get_calculator(node).calculate_output_height(self.max_input_size[1], node))
+                        )
                     )
+
                 else:
-                    G.add_edge(id(node), connected_node, weight=self.output_size[0] * self.output_size[1])
+                    G.add_edge(id(node), connected_node, weight=0)
 
         return G
 
@@ -117,27 +130,27 @@ class ModelResolution:
         Calculates the minimal resolution (min input size) on the longest path based on given calculators
         :return: list
         """
-        input_size = [0, 0]
-        output_size = self.output_size
+        input_size = np.array(self.max_input_size, dtype=int)
+        output_size = np.array([0, 0], dtype=int)
         for node in self.filter_nodes(self.longest_path):
-            input_size = [self.get_calculator(node).calculate_input_width(output_size[0], node),
-                          self.get_calculator(node).calculate_input_height(output_size[1], node)]
+            output_size = np.array([self.__get_calculator(node).calculate_output_width(input_size[0], node),
+                                    self.__get_calculator(node).calculate_output_height(input_size[1], node)])
 
-            output_size = input_size
+            input_size = output_size
 
-        return input_size
+        return list(np.floor(self.max_input_size / output_size).astype(int))
 
     def calculate_minimal_resolution_basic(self) -> list:
         """
         Calculates the minimal resolution (min input size) on the simple nodes list based on given calculators
         :return: list
         """
-        input_size = [0, 0]
-        output_size = self.output_size
-        for node in reversed(self.filter_nodes(self.model.graph.node)):
-            input_size = [self.get_calculator(node).calculate_input_width(output_size[0], node),
-                          self.get_calculator(node).calculate_input_height(output_size[1], node)]
+        input_size = np.array(self.max_input_size, dtype=int)
+        output_size = np.array([0, 0], dtype=int)
+        for node in self.filter_nodes(self.model.graph.node):
+            output_size = np.array([self.__get_calculator(node).calculate_output_width(input_size[0], node),
+                                    self.__get_calculator(node).calculate_output_height(input_size[1], node)])
 
-            output_size = input_size
+            input_size = output_size
 
-        return input_size
+        return list(np.floor(self.max_input_size / output_size).astype(int))
