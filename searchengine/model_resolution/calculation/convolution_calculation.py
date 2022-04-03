@@ -16,7 +16,7 @@ class ConvolutionCalculation:
         :param attribute: given attribute to check
         :return: bool
         """
-        return all(i > 1 for i in attribute.ints) and attribute.name == "strides"
+        return all(i > 0 for i in attribute.ints) and attribute.name == "strides"
 
     @staticmethod
     def __check_padding(attribute) -> bool:
@@ -25,7 +25,7 @@ class ConvolutionCalculation:
         :param attribute: given attribute to check
         :return: bool
         """
-        return all(i > 1 for i in attribute.ints) and attribute.name == "pads"
+        return all(i > 0 for i in attribute.ints) and attribute.name == "pads"
 
     @staticmethod
     def __check_kernel_size(attribute) -> bool:
@@ -34,7 +34,7 @@ class ConvolutionCalculation:
         :param attribute: given attribute to check
         :return: bool
         """
-        return all(i > 1 for i in attribute.ints) and attribute.name == "kernel_shape"
+        return all(i > 0 for i in attribute.ints) and attribute.name == "kernel_shape"
 
     def filter(self, node) -> bool:
         """
@@ -43,7 +43,8 @@ class ConvolutionCalculation:
         :return: bool
         """
         return (node.op_type in self.__operators) and any(
-            [self.__check_strides(attribute) or self.__check_padding(attribute) or self.__check_kernel_size(attribute) for
+            [self.__check_strides(attribute) or self.__check_padding(attribute) or self.__check_kernel_size(attribute)
+             for
              attribute in node.attribute])
 
     def __find_attributes(self, node):
@@ -71,7 +72,6 @@ class ConvolutionCalculation:
         :param attributes: attributes to check
         :return: (padding_width_top, padding_width_bottom, padding_height_top, padding_height_bottom)
         """
-
 
         if "pads" not in attributes[0]:
             return 0, 0, 0, 0
@@ -145,6 +145,3 @@ class ConvolutionCalculation:
         padding_width_top, padding_width_bottom, strides_width, kernel_width, _, _, _, _ = self.__find_attributes(node)
         return math.floor(
             -padding_width_bottom + kernel_width + strides_width * output_width - strides_width - padding_width_top)
-
-
-
