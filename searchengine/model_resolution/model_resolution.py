@@ -18,10 +18,11 @@ class ModelResolution:
                      PoolCalculation()
                  ],
                  max_input_size=[4096, 4096],
+                 output_size=[2, 2],
                  use_longest_path=True
                  ) -> None:
 
-        if model is "":
+        if model == "":
             return
         if isinstance(model, str) and os.path.exists(model):
             model = onnx.load(model)
@@ -46,6 +47,7 @@ class ModelResolution:
         self.calculators = calculators
         self.filter = [calculator.filter for calculator in self.calculators]
         self.max_input_size = max_input_size
+        self.output_size = output_size
 
         if use_longest_path:
             self.longest_path = self.__calculate_longest_path()
@@ -89,6 +91,11 @@ class ModelResolution:
             for connected_node_id in self.nodes_by_tensor_output[input_tensor]:
                 yield connected_node_id
 
+    def __get_node_output_ids(self, node: onnx.NodeProto):
+        for output_tensor in node.output:
+            for connected_node_id in self.nodes_by_tensor_input[output_tensor]:
+                yield connected_node_id
+
     def __calculate_longest_path(self) -> list:
         """
         Calculates the longest path on the graph
@@ -104,19 +111,19 @@ class ModelResolution:
         """
         G = nx.DiGraph()
 
-        for node in self.model.graph.node:
-            for connected_node in self.__get_node_input_ids(node):
+        for node in reversed(self.model.graph.node):
+            for connected_node in self.__get_node_output_ids(node):
                 if self.__get_calculator(node) is not None:
                     G.add_edge(
                         id(node),
                         connected_node,
                         # calculating the weight as proportion scale: max_input_size/calculated output size
                         weight=(
-                                (self.max_input_size[0] /
-                                 self.__get_calculator(node).calculate_output_width(self.max_input_size[0], node))
+                                (
+                                    self.__get_calculator(node).calculate_input_width(self.output_size[0], node))
                                 *
-                                (self.max_input_size[1] /
-                                 self.__get_calculator(node).calculate_output_height(self.max_input_size[1], node))
+                                (
+                                    self.__get_calculator(node).calculate_input_height(self.output_size[1], node))
                         )
                     )
 
@@ -130,27 +137,34 @@ class ModelResolution:
         Calculates the minimal resolution (min input size) on the longest path based on given calculators
         :return: list
         """
-        input_size = np.array(self.max_input_size, dtype=int)
-        output_size = np.array([0, 0], dtype=int)
+        output_size = np.array(self.output_size, dtype=int)
+        for node in reversed(self.filter_nodes(self.longest_path)):
+            output_size = np.array([self.__get_calculator(node).calculate_input_width(output_size[0], node),
+                                    self.__get_calculator(node).calculate_input_height(output_size[1], node)])
+
+        return list(np.round(output_size).astype(int))
+
+    def check_minimal_resolution_with_longest_path(self):
+        """
+        Checks the minimal resolution to fit with the set output size
+        :param input_size:
+        :return:
+        """
+        input_size = np.array(self.minimal_resolution, dtype=int)
         for node in self.filter_nodes(self.longest_path):
-            output_size = np.array([self.__get_calculator(node).calculate_output_width(input_size[0], node),
-                                    self.__get_calculator(node).calculate_output_height(input_size[1], node)])
+            input_size = np.array([self.__get_calculator(node).calculate_output_width(input_size[0], node),
+                                   self.__get_calculator(node).calculate_output_height(input_size[1], node)])
 
-            input_size = output_size
-
-        return list(np.floor(self.max_input_size / output_size).astype(int))
+        return list(np.round(input_size).astype(int)) == self.output_size
 
     def calculate_minimal_resolution_basic(self) -> list:
         """
         Calculates the minimal resolution (min input size) on the simple nodes list based on given calculators
         :return: list
         """
-        input_size = np.array(self.max_input_size, dtype=int)
-        output_size = np.array([0, 0], dtype=int)
-        for node in self.filter_nodes(self.model.graph.node):
-            output_size = np.array([self.__get_calculator(node).calculate_output_width(input_size[0], node),
-                                    self.__get_calculator(node).calculate_output_height(input_size[1], node)])
+        output_size = np.array(self.output_size, dtype=int)
+        for node in reversed(self.filter_nodes(self.model.graph.node)):
+            output_size = np.array([self.__get_calculator(node).calculate_input_width(output_size[0], node),
+                                    self.__get_calculator(node).calculate_input_height(output_size[1], node)])
 
-            input_size = output_size
-
-        return list(np.floor(self.max_input_size / output_size).astype(int))
+        return list(np.round(output_size).astype(int))

@@ -1,6 +1,3 @@
-import math
-
-
 class ConvolutionCalculation:
 
     def __init__(self, operators=["Conv", "ConvTranspose", "ConvInteger", "QLinearConv"]):
@@ -107,8 +104,7 @@ class ConvolutionCalculation:
         """
         _, _, _, _, padding_height_top, padding_height_bottom, strides_height, kernel_height = self.__find_attributes(
             node)
-        return math.floor(
-            (input_height + padding_height_top + padding_height_bottom - kernel_height) / strides_height + 1)
+        return (input_height + padding_height_top + padding_height_bottom - kernel_height) / strides_height + 1
 
     def calculate_output_width(self, input_width, node):
         """
@@ -119,7 +115,7 @@ class ConvolutionCalculation:
         :return: float
         """
         padding_width_top, padding_width_bottom, strides_width, kernel_width, _, _, _, _ = self.__find_attributes(node)
-        return math.floor((input_width + padding_width_top + padding_width_bottom - kernel_width) / strides_width + 1)
+        return (input_width + padding_width_top + padding_width_bottom - kernel_width) / strides_width + 1
 
     def calculate_input_height(self, output_height, node):
         """
@@ -131,8 +127,7 @@ class ConvolutionCalculation:
         """
         _, _, _, _, padding_height_top, padding_height_bottom, strides_height, kernel_height = self.__find_attributes(
             node)
-        return math.floor(
-            -padding_height_bottom + kernel_height + strides_height * output_height - strides_height - padding_height_top)
+        return -padding_height_bottom + kernel_height + strides_height * output_height - strides_height - padding_height_top
 
     def calculate_input_width(self, output_width, node):
         """
@@ -143,5 +138,4 @@ class ConvolutionCalculation:
         :return: float
         """
         padding_width_top, padding_width_bottom, strides_width, kernel_width, _, _, _, _ = self.__find_attributes(node)
-        return math.floor(
-            -padding_width_bottom + kernel_width + strides_width * output_width - strides_width - padding_width_top)
+        return -padding_width_bottom + kernel_width + strides_width * output_width - strides_width - padding_width_top
