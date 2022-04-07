@@ -11,8 +11,8 @@ class MyTestCase(unittest.TestCase):
         # IMPORTANT: An onnx file has to be provided to run these tests
         # onnx_model_path = "G:/Users/David/Downloads/mnist-7 (4).onnx"
         # onnx_model_path = "G:/Users/David/Downloads/resnet152-v2-7.onnx"
-        onnx_model_path = "G:/Users/David/Downloads/bvlcalexnet-12.onnx"
-
+        # onnx_model_path = "G:/Users/David/Downloads/bvlcalexnet-12.onnx"
+        onnx_model_path = "G:/Users/David/Downloads/timm_ecaresnet50d_pruned_imagenet_11.onnx"
         self.model = onnx.load(onnx_model_path)
         onnx.checker.check_model(self.model)
 

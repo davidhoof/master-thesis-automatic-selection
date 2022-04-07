@@ -72,6 +72,12 @@ class ConvolutionCalculation:
 
         if "pads" not in attributes[0]:
             return 0, 0, 0, 0
+        if "pads" in attributes[0] and len(attributes[1][attributes[0].index("pads")]) != 4:
+            if len(attributes[1][attributes[0].index("pads")]) == 2:
+                # Sometime symmetries are found: [1,1,2,2] => [1,2]
+                return attributes[1][attributes[0].index("pads")][0], attributes[1][attributes[0].index("pads")][0], \
+                       attributes[1][attributes[0].index("pads")][1], attributes[1][attributes[0].index("pads")][1]
+            return 0, 0, 0, 0
         return attributes[1][attributes[0].index("pads")][0], attributes[1][attributes[0].index("pads")][1], \
                attributes[1][attributes[0].index("pads")][2], attributes[1][attributes[0].index("pads")][3]
 
@@ -82,6 +88,14 @@ class ConvolutionCalculation:
         :param attributes: attributes to check
         :return: (strides_width, strides_height)
         """
+        if "strides" not in attributes[0]:
+            return 0, 0, 0, 0
+        if "strides" in attributes[0] and len(attributes[1][attributes[0].index("strides")]) != 2:
+            if len(attributes[1][attributes[0].index("strides")]) == 1:
+                # Sometime symmetries are found: [2,2] => [2]
+                return attributes[1][attributes[0].index("strides")][0], \
+                       attributes[1][attributes[0].index("strides")][0]
+
         return attributes[1][attributes[0].index("strides")][0], attributes[1][attributes[0].index("strides")][1]
 
     @staticmethod
@@ -91,6 +105,14 @@ class ConvolutionCalculation:
         :param attributes: attributes to check
         :return: (kernel_width, kernel_height)
         """
+        if "kernel_shape" not in attributes[0]:
+            return 0, 0, 0, 0
+        if "kernel_shape" in attributes[0] and len(attributes[1][attributes[0].index("kernel_shape")]) != 2:
+            if len(attributes[1][attributes[0].index("kernel_shape")]) == 1:
+                # Sometime symmetries are found: [2,2] => [2]
+                return attributes[1][attributes[0].index("kernel_shape")][0], \
+                       attributes[1][attributes[0].index("kernel_shape")][0]
+
         return attributes[1][attributes[0].index("kernel_shape")][0], \
                attributes[1][attributes[0].index("kernel_shape")][1]
 
