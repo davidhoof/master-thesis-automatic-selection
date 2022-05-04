@@ -1,18 +1,16 @@
 Many classes:
-SUN397 Dataset (2022): https://paperswithcode.com/dataset/sun397 #130,519 images 899 categories 
-AIcrowd | Food Recognition Benchmark 2022 | Challenges (2022): https://www.aicrowd.com/challenges/food-recognition-benchmark-2022 
-Papers with Code - Tiny ImageNet Dataset (2022): https://paperswithcode.com/dataset/tiny-imagenet #100000 images 200 classes 64x64
+SUN397 Dataset (2022): https://paperswithcode.com/dataset/sun397 #130,519 images 899 categories ok
+Papers with Code - Tiny ImageNet Dataset (2022): https://paperswithcode.com/dataset/tiny-imagenet #100000 images 200 classes 64x64 ok
 
 Large dataset:
-Ratajczak, Rémi (2020): HistAerial V1.0.: http://eidolon.univ-lyon2.fr/~remi1/HistAerialDataset/ #same images in different sizes 32x32 50x50 100x100
+Ratajczak, Rémi (2020): HistAerial V1.0.: http://eidolon.univ-lyon2.fr/~remi1/HistAerialDataset/ #same images in different sizes 32x32 50x50 100x100 ok
 
 Large images:
-Papers with Code - Grocery Store Dataset (2022): https://paperswithcode.com/dataset/grocery-store # 5125 images 81 diffrent classes ~348x348 
-Papers with Code - RESISC45 Dataset (2022): https://paperswithcode.com/dataset/resisc45 # 31500 images 45 classes 256x256
+Papers with Code - Grocery Store Dataset (2022): https://paperswithcode.com/dataset/grocery-store # 5125 images 81 diffrent classes ~348x348 ok
 
 Cifar similar:
-Papers with Code - SVHN Dataset (2022): https://paperswithcode.com/dataset/svhn # 600.000 images 10 classes 32x32 street house numbers mnist?
-Papers with Code - Fashion-MNIST Dataset (2022): https://paperswithcode.com/dataset/fashion-mnist # 70.000 images 10 classes 28x28
+Papers with Code - SVHN Dataset (2022): https://paperswithcode.com/dataset/svhn # 600.000 images 10 classes 32x32 street house numbers mnist? ok
+Papers with Code - Fashion-MNIST Dataset (2022): https://paperswithcode.com/dataset/fashion-mnist # 70.000 images 10 classes 28x28 ok
+Fractal DB: https://hirokatsukataoka16.github.io/Pretraining-without-Natural-Images/ 60 classes 60000 images ok
 
-Medical:
-Papers with Code - ChestX-ray8 Dataset (2022): https://paperswithcode.com/dataset/chestx-ray8 # 108948 images 8 classes 
+
