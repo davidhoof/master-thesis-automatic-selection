@@ -1,0 +1,10 @@
+"sweep_name": "SWEEPComplete"
+"root_path": "running/sweepcomplete"
+"output_from": "output/"
+"output_to_path": "output_sweep_complete/"
+"checkpoint_order":
+  - "cifar10": 0,
+  - "cifar100": 1,
+  - "grocerystore": 2,
+  - "svhn": 3,
+  - "tinyimagenet": 4
