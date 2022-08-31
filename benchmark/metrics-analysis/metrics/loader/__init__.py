@@ -5,8 +5,21 @@ from metrics.loader.checkpoint_loader import CheckpointLoader
 
 
 class MetricsLoader:
+    """
+    Loads all the given metrics into a pandas dataframe for further processing
+    """
+
     def __init__(self, cp_loader: CheckpointLoader, metrics: list[Metrics], datasets: list, models: list,
                  finetune_checkpoints: list[dict], pretrained_checkpoint):
+        """
+        Initialize the metrics loader
+        :param cp_loader: Initialized checkpoint loader to work with
+        :param metrics: Metrics to be accumulated in the final dataframe
+        :param datasets: list of datasets on which the metrics are applied on
+        :param models: list of models on which the metrics are applied on
+        :param finetune_checkpoints: checkpoints on which were finetuned on
+        :param pretrained_checkpoint: checkpoint on which the models were pretrained
+        """
         self.pretrained_checkpoint = pretrained_checkpoint
         self.cp_loader = cp_loader
         self.finetune_checkpoints = finetune_checkpoints
@@ -15,12 +28,21 @@ class MetricsLoader:
         self.metrics = metrics
 
     def __get_all_metrics(self, model):
+        """
+        Calculate and concat all metrics for the given model
+        :param model: model on which the metrics are calculated on
+        :return: all metrics combined in a dictionary
+        """
         all_metrics = {}
         for metric in self.metrics:
             all_metrics.update(metric.calculate_metrics(model))
         return all_metrics
 
     def load_all_metrics(self) -> pd.DataFrame:
+        """
+        Loads all the metrics from the class given value range of models, datasets and checkpoints
+        :return: DataFrame with all metrics
+        """
         records = []
         for dataset in self.datasets:
             for model in self.models:
