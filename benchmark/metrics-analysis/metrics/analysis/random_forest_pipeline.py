@@ -46,7 +46,7 @@ class RandomForestPipeline:
             ("rf", RandomForestRegressor(max_depth=4, random_state=0))
         ])
 
-        self.rf_random = RandomizedSearchCV(estimator=self.rf, param_distributions=random_grid, n_iter=n_iter, cv=cv,
+        self.rf_random = RandomizedSearchCV(estimator=self.rf, param_distributions=self.random_grid, n_iter=n_iter, cv=cv,
                                             verbose=verbose, random_state=random_state, n_jobs=n_jobs)
 
         self.regression_model = None
