@@ -4,6 +4,43 @@ from numbers import Number
 import torch
 
 
+class LayerHook:
+    """
+    Utility class to add a forward hook on a torch-CNN-Layer
+    """
+
+    def __init__(self):
+        self.storage = None
+        self.hook_handle = None
+
+    def pull(self):
+        """
+        Get the storage of the hook
+        :return: storage
+        """
+        if self.hook_handle is not None:
+            self.hook_handle.remove()
+        return self.storage
+
+    def register_hook(self, module, store_input=True):
+        """
+        Register a hook on a module
+        :param module: module on which the forward hook is attached
+        :param store_input: Toggle if the input or output of the module is stored
+        """
+        if self.hook_handle is not None:
+            self.hook_handle.remove()
+        self.storage = None
+
+        def hook(model, inp, out):
+            if store_input:
+                self.storage = inp
+            else:
+                self.storage = out
+
+        self.hook_handle = module.register_forward_hook(hook)
+
+
 def get_children(model: torch.nn.Module):
     """
     Gets all children from given torch module
@@ -53,6 +90,8 @@ def dicts_almost_equal(dict1, dict2, rel_tol=1e-8):
             if isinstance(item, Number):
                 # if not abs(dict1[key] - dict2[key]) <= rel_tol:
                 # https://stackoverflow.com/questions/5595425/what-is-the-best-way-to-compare-floats-for-almost-equality-in-python
+                # print(dict1[key])
+                # print(dict2[key])
                 if not isclose(dict1[key], dict2[key], rel_tol=rel_tol):
                     return False
             else:

@@ -6,7 +6,7 @@ from sklearn.metrics import silhouette_score
 import numpy as np
 from metrics.utils import get_children
 
-from metrics.loader.layer_hook import LayerHook
+from metrics.utils import LayerHook
 import data
 
 
@@ -16,6 +16,7 @@ class Metrics:
     """
 
     def __init__(self):
+        self.config = {}
         pass
 
     def calculate_metrics(self, model) -> dict:
@@ -25,6 +26,12 @@ class Metrics:
         :return: dict of calculated metrics
         """
         return {}
+
+    def add_parameter_to_config(self, key, value):
+        self.config[key] = value
+
+    def update_config(self, config):
+        self.config.update(config)
 
 
 class QualityMetrics(Metrics):
@@ -38,6 +45,11 @@ class QualityMetrics(Metrics):
         self.sparsity_eps = sparsity_eps
 
     def calculate_metrics(self, model) -> dict:
+        """
+        Calculates quality metrics from given model
+        :param model: model to calculate metrics from
+        :return: dict of calculated quality metrics
+        """
         info_dict = measure_quality(model, sparsity_eps=self.sparsity_eps)
 
         sparsity = []
@@ -70,6 +82,11 @@ class ArchitectureSizeMetrics(Metrics):
         super().__init__()
 
     def calculate_metrics(self, model) -> dict:
+        """
+        Calculates architecture size metrics from given model
+        :param model: model to calculate metrics from
+        :return: dict of calculated architecture size metrics
+        """
         children = get_children(model)
 
         names = list(dict.fromkeys([item.__class__.__name__ for item in children]))
@@ -80,6 +97,17 @@ class ArchitectureSizeMetrics(Metrics):
         architecture_size_dict['architecture_size'] = len(children)
 
         return architecture_size_dict
+
+
+class InformationalMetrics(Metrics):
+
+    def __init__(self):
+        super().__init__()
+
+    def calculate_metrics(self, model) -> dict:
+        return {
+            "dataset": model.myhparams["dataset"]
+        }
 
 
 class LatentSpaceMetrics(Metrics):
@@ -137,7 +165,15 @@ class LatentSpaceMetrics(Metrics):
         return result
 
     def calculate_metrics(self, model) -> dict:
-        data_dir = os.path.join(model.myhparams["data_dir"], model.myhparams["dataset"])
+        """
+        Calculates latent space metrics from given model with a clustering algorithm
+        :param model: model to calculate metrics from
+        :return: dict of calculated latent space metrics
+        """
+        if 'finetune_dataset' in self.config:
+            data_dir = os.path.join(model.myhparams["data_dir"], self.config['finetune_dataset'][0])
+        else:
+            data_dir = os.path.join(model.myhparams["data_dir"], model.myhparams["dataset"])
         data_ = None
 
         if model.myhparams['dataset_percentage'] == 100:
