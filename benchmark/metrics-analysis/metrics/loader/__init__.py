@@ -110,8 +110,10 @@ class MetricsLoader:
                         all_metrics = self.__get_all_metrics(
                             model=self.pretrained_cp_loader.load_checkpoint(pretrained_dataset, model,
                                                                             self.pretrained_checkpoint))
-
-                    difference = self.__get_difference(model, finetune_dataset, finetune_checkpoint,
+                    
+                    # The difference has to hand over the pretrained dataset, because the checkpoints are saved in the 
+                    # order of the pretrained datasets. Otherwise the difference is not calculated correclty
+                    difference = self.__get_difference(model, pretrained_dataset, finetune_checkpoint,
                                                        self.from_scratch_checkpoint)
 
                     record_list = {
