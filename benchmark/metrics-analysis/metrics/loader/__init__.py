@@ -112,7 +112,7 @@ class MetricsLoader:
                                                                             self.pretrained_checkpoint))
                     
                     # The difference has to hand over the pretrained dataset, because the checkpoints are saved in the 
-                    # order of the pretrained datasets. Otherwise the difference is not calculated correclty
+                    # order of the pretrained datasets. Otherwise, the difference is not calculated correctly.
                     difference = self.__get_difference(model, pretrained_dataset, finetune_checkpoint,
                                                        self.from_scratch_checkpoint)
 
