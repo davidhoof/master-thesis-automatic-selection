@@ -158,7 +158,7 @@ class LatentSpaceMetrics(Metrics):
         :return: initialized dynamic parameters as dict
         """
         result = {}
-        if 'n_clusters' in cluster_model_dynamic_kwargs and cluster_model_dynamic_kwargs['n_clusters'] is None:
+        if cluster_model_dynamic_kwargs is not None and 'n_clusters' in cluster_model_dynamic_kwargs and cluster_model_dynamic_kwargs['n_clusters'] is None:
             result.update(cluster_model_dynamic_kwargs)
             result['n_clusters'] = int(model.myhparams['num_classes'])
 
