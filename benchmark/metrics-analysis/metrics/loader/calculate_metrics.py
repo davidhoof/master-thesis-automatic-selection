@@ -6,6 +6,8 @@ from sklearn.metrics import silhouette_score
 from sklearn.neighbors import NearestNeighbors
 from kneed import KneeLocator
 
+import matplotlib.pyplot as plt
+
 import numpy as np
 from metrics.utils import get_children
 
@@ -18,9 +20,9 @@ class Metrics:
     Superclass to implement different metrics for analysis of pretrained neural networks
     """
 
-    def __init__(self):
+    def __init__(self,prefix):
+        self.prefix = prefix
         self.config = {}
-        pass
 
     def calculate_metrics(self, model) -> dict:
         """
@@ -29,6 +31,13 @@ class Metrics:
         :return: dict of calculated metrics
         """
         return {}
+    
+    def calc_metrics(self, model) -> dict:
+        metrics = self.calculate_metrics(model)
+        if self.prefix == "":
+            return {f'{key}': value for key, value in metrics.items()}
+        else:
+            return {f'{self.prefix}_{key}': value for key, value in metrics.items()}
 
     def add_parameter_to_config(self, key, value):
         self.config[key] = value
@@ -43,8 +52,8 @@ class QualityMetrics(Metrics):
     the weighted sparsity, entropy variance and the cleaned entropy variance
     """
 
-    def __init__(self, sparsity_eps=0.1):
-        super().__init__()
+    def __init__(self, sparsity_eps=0.1, prefix=""):
+        super().__init__(prefix)
         self.sparsity_eps = sparsity_eps
 
     def calculate_metrics(self, model) -> dict:
@@ -81,8 +90,8 @@ class ArchitectureSizeMetrics(Metrics):
     Architecture Size as metrics. The sizes of the different layer are also calculated
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, prefix=""):
+        super().__init__(prefix)
 
     def calculate_metrics(self, model) -> dict:
         """
@@ -104,8 +113,8 @@ class ArchitectureSizeMetrics(Metrics):
 
 class InformationalMetrics(Metrics):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, prefix=""):
+        super().__init__(prefix)
 
     def calculate_metrics(self, model) -> dict:
         return {
@@ -119,14 +128,15 @@ class LatentSpaceMetrics(Metrics):
     contains all the feature maps, which can be clustered.
     """
 
-    def __init__(self, cluster_model_name, **clustering_model_static_kwargs):
+    def __init__(self, prefix="" ,show_information=False, cluster_model_name="", **clustering_model_static_kwargs):
         """
         Initialize the metric calculation.
         :param cluster_model_name: Name of the used cluster_model
         :param clustering_model_static_kwargs: static parameters for the cluster model
         """
-        super().__init__()
+        super().__init__(prefix)
         assert cluster_model_name in ['kmeans', 'KMeans', 'dbscan', 'DBScan']
+        self.show_information = show_information
         self.cluster_model_name = cluster_model_name
         self.clustering_model_static_kwargs = clustering_model_static_kwargs
 
@@ -180,8 +190,9 @@ class LatentSpaceMetrics(Metrics):
             nearest_neighbors = NearestNeighbors(n_neighbors=min_samples)
             neighbors = nearest_neighbors.fit(latent_space)
 
-            distances, indices = neighbors.kneighbors(latent_space)
-            distances = np.sort(distances[:, min_samples - 1], axis=0)
+            distances, indices = neighbors.kneighbors(latent_space)            
+            distances = np.sort(distances, axis=0)
+            distances = distances[:, 1]
 
             i = np.arange(len(distances))
             knee = KneeLocator(i, distances, S=1, curve='convex', direction='increasing', interp_method='polynomial')
@@ -225,28 +236,44 @@ class LatentSpaceMetrics(Metrics):
 
         latent_space = hook.pull()[0].detach()
 
-        print(f'{"model":13}: {model.myhparams["classifier"]}')
+        
 
-        print(f'{"shape":13}: {tuple(np.shape(latent_space))}')
-        print(f'{"cluster_algo":13}: {self.cluster_model_name}')
-
-        all_params = {}
-
-        clustering_model_class, dynamic_cluster_kwargs = self.__get_clustering_model(self.cluster_model_name)
-
-        all_params.update(self.clustering_model_static_kwargs)
-        all_params.update(self.__get_dynamic_params(
+        clustering_model_class, dynamic_cluster_kwargs = self.__get_clustering_model(self.cluster_model_name)        
+        
+        dynamic_cluster_kwargs = self.__get_dynamic_params(
             latent_space,
             model,
             dynamic_cluster_kwargs
-        ))
-        if 'dbscan' == self.cluster_model_name and 'eps' in all_params and 'min_samples' in all_params:
-            print(f'{"eps":13}: {all_params["eps"]:2.2f}')
-            print(f'{"min_samples":13}: {all_params["min_samples"]}')
+        )
+        
+        all_params = {}
+        all_params.update(self.clustering_model_static_kwargs)
+        all_params.update(dynamic_cluster_kwargs)
+        
+        # if self.show_information and 'dbscan' == self.cluster_model_name and 'eps' in all_params and 'min_samples' in all_params:
+        #     print(f'{"eps":13}: {all_params["eps"]:2.2f}')
+        #     print(f'{"min_samples":13}: {all_params["min_samples"]}')
 
         cluster_model = clustering_model_class(**all_params)
         cluster_model.fit_predict(latent_space)
-
-        score = silhouette_score(latent_space, cluster_model.labels_, metric='cosine')
+        
+        n_cluster = len(set(cluster_model.labels_))
+        
+        if n_cluster <= 1:
+            score = 0.0
+        else:
+            score = silhouette_score(latent_space, cluster_model.labels_, metric='cosine')
+            
+        if self.show_information:
+            print(f'{"model":13}: {model.myhparams["classifier"]}')
+            print(f'{"shape":13}: {tuple(np.shape(latent_space))}')
+            print(f'{"cluster_algo":13}: {self.cluster_model_name}')            
+            for parameter, value in dynamic_cluster_kwargs:
+                print(f'{parameter:13}: {value}')
+            print(f'{"n_cluster":13}: {n_cluster}') 
+            print(f'{"silhouette":13}: {score}')
+        
+            plt.scatter(latent_space[:,0],latent_space[:,1], c=cluster_model.labels_) 
+            plt.show()
 
         return {"latent_space_silhouette_score": score}

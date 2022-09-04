@@ -61,7 +61,7 @@ class MetricsLoader:
         for metric in self.metrics:
             if config is not None or config:
                 metric.update_config(config)
-            all_metrics.update(metric.calculate_metrics(model))
+            all_metrics.update(metric.calc_metrics(model))
         return all_metrics
 
     def __get_difference(self, model, finetune_dataset, finetune_checkpoint, from_scratch_checkpoint) -> dict:
@@ -109,7 +109,7 @@ class MetricsLoader:
                     else:
                         all_metrics = self.__get_all_metrics(
                             model=self.pretrained_cp_loader.load_checkpoint(pretrained_dataset, model,
-                                                                            self.pretrained_checkpoint))
+                                                                            self.pretrained_checkpoint))                       
                     
                     # The difference has to hand over the pretrained dataset, because the checkpoints are saved in the 
                     # order of the pretrained datasets. Otherwise, the difference is not calculated correctly.
